@@ -89,7 +89,7 @@ async function consumeSse(
     const { done, value } = await reader.read();
     if (done) break;
 
-    buffer += decoder.decode(value, { stream: true });
+    buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
     const blocks = buffer.split("\n\n");
     buffer = blocks.pop() ?? "";
 
@@ -100,10 +100,12 @@ async function consumeSse(
       let data = "";
 
       for (const line of block.split("\n")) {
-        if (line.startsWith("event:")) {
-          event = line.slice(6).trim();
-        } else if (line.startsWith("data:")) {
-          data += line.slice(5).trim();
+        const trimmed = line.trim();
+        if (trimmed.startsWith("event:")) {
+          event = trimmed.slice(6).trim();
+          currentEvent = event;
+        } else if (trimmed.startsWith("data:")) {
+          data += trimmed.slice(5).trim();
         }
       }
 
